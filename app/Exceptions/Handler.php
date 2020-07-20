@@ -5,6 +5,12 @@ namespace App\Exceptions;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Illuminate\Auth\AuthenticationException;
+
 class Handler extends ExceptionHandler
 {
     /**
@@ -50,6 +56,39 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
+        if ($exception instanceof AuthenticationException) {
+            $exception = new AuthenticationException(__('user.unauthenticated'), $exception->guards(), $exception->redirectTo());
+        }
         return parent::render($request, $exception);
+    }
+
+    /**
+     * Convert the given exception to an array.
+     *
+     * @param  \Exception  $e
+     * @return array
+     */
+    protected function convertExceptionToArray(Throwable $e)
+    {
+        $array = parent::convertExceptionToArray($e);
+        $array['code'] = $array['message'];
+        $array['message'] = __($array['message']);
+        return $array;
+    }
+
+    /**
+     * Convert a validation exception into a JSON response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Validation\ValidationException  $exception
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function invalidJson($request, ValidationException $exception)
+    {
+        return response()->json([
+            'code' => 'data.invalid',
+            'message' => __($exception->getMessage()),
+            'errors' => $exception->errors(),
+        ], $exception->status);
     }
 }
