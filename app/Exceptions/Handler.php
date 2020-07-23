@@ -71,8 +71,13 @@ class Handler extends ExceptionHandler
     protected function convertExceptionToArray(Throwable $e)
     {
         $array = parent::convertExceptionToArray($e);
-        $array['code'] = $array['message'];
-        $array['message'] = __($array['message']);
+        if($this->isHttpException($e) && empty($e->getMessage())) {
+            $array['code'] = $e->getStatusCode();
+            $array['message'] = __('http.' . $e->getStatusCode());
+        } else {
+            $array['code'] = $array['message'];
+            $array['message'] = __($array['message']);
+        }
         return $array;
     }
 
